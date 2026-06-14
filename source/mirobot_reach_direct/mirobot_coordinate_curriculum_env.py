@@ -170,6 +170,19 @@ class MT4CoordinateCurriculumEnvCfg(DirectRLEnvCfg):
         int(os.environ.get("MT4_STOP_WHEN_ALL_REGIONS_RECORDED", "1") or "1")
     )
     region_target_jitter_fraction = 0.20
+    camera_workspace_min_samples = int(os.environ.get("MT4_CAMERA_WORKSPACE_MIN_SAMPLES", "256") or "256")
+    camera_workspace_visibility_threshold = float(
+        os.environ.get("MT4_CAMERA_WORKSPACE_VISIBILITY_THRESHOLD", "0.95") or "0.95"
+    )
+    camera_workspace_region_match_threshold = float(
+        os.environ.get("MT4_CAMERA_WORKSPACE_REGION_MATCH_THRESHOLD", "0.95") or "0.95"
+    )
+    camera_workspace_max_estimate_error = float(
+        os.environ.get("MT4_CAMERA_WORKSPACE_MAX_ESTIMATE_ERROR", "0.005") or "0.005"
+    )
+    camera_workspace_audit_interval_steps = int(
+        os.environ.get("MT4_CAMERA_WORKSPACE_AUDIT_INTERVAL_STEPS", "240") or "240"
+    )
 
     reach_weight = 3.0
     plane_weight = 0.0
@@ -415,6 +428,27 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
         self.curriculum_step_counter = 0
         self.active_region_started_step = 0
         self.active_region_last_success_step = 0
+        self.camera_workspace_audit_last_write_step = 0
+        self.camera_workspace_audit_snapshot_writes = 0
+        self.region_audit_samples = torch.zeros((self.total_regions,), dtype=torch.float, device=self.device)
+        self.region_audit_target_stereo_visible = torch.zeros(
+            (self.total_regions,), dtype=torch.float, device=self.device
+        )
+        self.region_audit_target_gripper_visible = torch.zeros(
+            (self.total_regions,), dtype=torch.float, device=self.device
+        )
+        self.region_audit_target_three_camera_visible = torch.zeros(
+            (self.total_regions,), dtype=torch.float, device=self.device
+        )
+        self.region_audit_gripper_stereo_visible = torch.zeros(
+            (self.total_regions,), dtype=torch.float, device=self.device
+        )
+        self.region_audit_camera_region_matches = torch.zeros(
+            (self.total_regions,), dtype=torch.float, device=self.device
+        )
+        self.region_audit_target_estimate_error_sum = torch.zeros(
+            (self.total_regions,), dtype=torch.float, device=self.device
+        )
 
         self.target_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.face_ids = torch.zeros((self.num_envs,), dtype=torch.long, device=self.device)
@@ -754,6 +788,10 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
         skipped_region = self._skip_stalled_active_region()
         if skipped_region:
             time_out = torch.ones_like(time_out)
+        self._update_camera_workspace_audit()
+        self._maybe_write_camera_workspace_audit_snapshot(
+            force=skipped_region or self.is_region_curriculum_complete()
+        )
 
         prefix = f"coordinate_curriculum/{self.cfg.curriculum_stage}"
         center_success_rate = (self.distance < self.cfg.center_success_radius).float().mean()
@@ -761,6 +799,7 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
         center_3cm_rate = (self.distance < 0.030).float().mean()
         fine_center_rate = (self.distance < self.cfg.fine_center_radius).float().mean()
         near_center_rate = (self.distance < self.cfg.near_center_radius).float().mean()
+        camera_status_counts = self._camera_workspace_status_counts()
         log_data = {
             f"{prefix}_success_rate": raw_success.float().mean(),
             f"{prefix}_new_success_rate": new_success.float().mean(),
@@ -854,6 +893,22 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
             ),
             f"{prefix}_mastered_region_count": self.region_mastered.float().sum(),
             f"{prefix}_skipped_region_count": self.region_skipped.float().sum(),
+            f"{prefix}_camera_operational_region_count": torch.tensor(
+                float(camera_status_counts["operational"]),
+                device=self.device,
+            ),
+            f"{prefix}_camera_visible_learning_failed_region_count": torch.tensor(
+                float(camera_status_counts["visible_learning_failed"]),
+                device=self.device,
+            ),
+            f"{prefix}_camera_excluded_region_count": torch.tensor(
+                float(camera_status_counts["camera_excluded"]),
+                device=self.device,
+            ),
+            f"{prefix}_camera_pending_region_count": torch.tensor(
+                float(camera_status_counts["pending"]),
+                device=self.device,
+            ),
             f"{prefix}_region_curriculum_complete": torch.tensor(
                 float(self.is_region_curriculum_complete()),
                 device=self.device,
@@ -1519,6 +1574,11 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
             f"- approach staging standoff: `{self.cfg.approach_standoff_distance}`",
             f"- gripper camera forward axis in gripper body frame: `{self.cfg.gripper_camera_forward_axis_b}`",
             f"- top-down alignment success threshold: `{self.cfg.top_down_alignment_success}`",
+            f"- camera workspace min samples: `{self.cfg.camera_workspace_min_samples}`",
+            f"- camera workspace visibility threshold: `{self.cfg.camera_workspace_visibility_threshold}`",
+            f"- camera workspace region match threshold: `{self.cfg.camera_workspace_region_match_threshold}`",
+            f"- camera workspace max estimate error: `{self.cfg.camera_workspace_max_estimate_error}`",
+            "- camera workspace audit output: `camera_workspace_audit.csv`",
             "",
             "| region | x | y | z |",
             "| ---: | ---: | ---: | ---: |",
@@ -1532,6 +1592,147 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
             lines.append(f"| {region_id} | {xyz[0]:.6f} | {xyz[1]:.6f} | {xyz[2]:.6f} |")
         lines.append("")
         out_path.write_text("\n".join(lines), encoding="utf-8")
+
+    def _update_camera_workspace_audit(self):
+        if not self._uses_region_mastery():
+            return
+
+        for region_id_tensor in torch.unique(self.region_ids):
+            region_id = int(region_id_tensor.item())
+            region_mask = self.region_ids == region_id
+            sample_count = region_mask.float().sum()
+            self.region_audit_samples[region_id] += sample_count
+            self.region_audit_target_stereo_visible[region_id] += (
+                self.target_stereo_visible.float() * region_mask.float()
+            ).sum()
+            self.region_audit_target_gripper_visible[region_id] += (
+                self.target_gripper_camera_visible.float() * region_mask.float()
+            ).sum()
+            self.region_audit_target_three_camera_visible[region_id] += (
+                self.target_three_camera_visible.float() * region_mask.float()
+            ).sum()
+            self.region_audit_gripper_stereo_visible[region_id] += (
+                self.gripper_stereo_visible.float() * region_mask.float()
+            ).sum()
+            self.region_audit_camera_region_matches[region_id] += (
+                self.camera_region_matches.float() * region_mask.float()
+            ).sum()
+            self.region_audit_target_estimate_error_sum[region_id] += (
+                self.target_estimate_error * region_mask.float()
+            ).sum()
+
+    def _region_audit_rate(self, hits: torch.Tensor, region_id: int) -> float:
+        samples = float(self.region_audit_samples[region_id].item())
+        if samples <= 0.0:
+            return 0.0
+        return float(hits[region_id].item()) / samples
+
+    def _region_audit_mean_estimate_error(self, region_id: int) -> float:
+        samples = float(self.region_audit_samples[region_id].item())
+        if samples <= 0.0:
+            return 0.0
+        return float(self.region_audit_target_estimate_error_sum[region_id].item()) / samples
+
+    def _camera_workspace_status(self, region_id: int) -> str:
+        samples = float(self.region_audit_samples[region_id].item())
+        if samples < max(int(self.cfg.camera_workspace_min_samples), 1):
+            return "pending"
+
+        stereo_rate = self._region_audit_rate(self.region_audit_target_stereo_visible, region_id)
+        match_rate = self._region_audit_rate(self.region_audit_camera_region_matches, region_id)
+        estimate_error = self._region_audit_mean_estimate_error(region_id)
+        camera_stable = (
+            stereo_rate >= float(self.cfg.camera_workspace_visibility_threshold)
+            and match_rate >= float(self.cfg.camera_workspace_region_match_threshold)
+            and estimate_error <= float(self.cfg.camera_workspace_max_estimate_error)
+        )
+        if not camera_stable:
+            return "camera_excluded"
+        if bool(self.region_mastered[region_id].item()):
+            return "operational"
+        if bool(self.region_skipped[region_id].item()):
+            return "visible_learning_failed"
+        return "pending"
+
+    def _camera_workspace_status_counts(self) -> dict[str, int]:
+        counts = {
+            "operational": 0,
+            "visible_learning_failed": 0,
+            "camera_excluded": 0,
+            "pending": 0,
+        }
+        if not self._uses_region_mastery():
+            return counts
+        for region_id in range(self.total_regions):
+            counts[self._camera_workspace_status(region_id)] += 1
+        return counts
+
+    def _maybe_write_camera_workspace_audit_snapshot(self, force: bool = False):
+        if not self._uses_region_mastery():
+            return
+        interval = int(self.cfg.camera_workspace_audit_interval_steps)
+        if not force and interval <= 0:
+            return
+        if not force and self.curriculum_step_counter - self.camera_workspace_audit_last_write_step < interval:
+            return
+        self._write_camera_workspace_audit_snapshot()
+        self.camera_workspace_audit_last_write_step = self.curriculum_step_counter
+
+    def _write_camera_workspace_audit_snapshot(self):
+        log_dir = getattr(self.cfg, "log_dir", None)
+        if not log_dir:
+            return
+
+        out_path = Path(log_dir) / "camera_workspace_audit.csv"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        lines = [
+            ",".join(
+                [
+                    "region_number",
+                    "samples",
+                    "target_stereo_visible_rate",
+                    "target_gripper_camera_visible_rate",
+                    "target_three_camera_visible_rate",
+                    "gripper_stereo_visible_rate",
+                    "camera_region_match_rate",
+                    "mean_target_estimate_error",
+                    "success_count",
+                    "mastered",
+                    "skipped",
+                    "active",
+                    "operating_status",
+                ]
+            )
+            + "\n"
+        ]
+        complete = self.is_region_curriculum_complete()
+        for region_id in range(self.total_regions):
+            samples = int(self.region_audit_samples[region_id].item())
+            mastered = bool(self.region_mastered[region_id].item())
+            skipped = bool(self.region_skipped[region_id].item())
+            active = (not complete) and region_id == self.active_region_id
+            lines.append(
+                ",".join(
+                    [
+                        str(region_id + 1),
+                        str(samples),
+                        f"{self._region_audit_rate(self.region_audit_target_stereo_visible, region_id):.6f}",
+                        f"{self._region_audit_rate(self.region_audit_target_gripper_visible, region_id):.6f}",
+                        f"{self._region_audit_rate(self.region_audit_target_three_camera_visible, region_id):.6f}",
+                        f"{self._region_audit_rate(self.region_audit_gripper_stereo_visible, region_id):.6f}",
+                        f"{self._region_audit_rate(self.region_audit_camera_region_matches, region_id):.6f}",
+                        f"{self._region_audit_mean_estimate_error(region_id):.6f}",
+                        str(int(self.region_success_counts[region_id].item())),
+                        "1" if mastered else "0",
+                        "1" if skipped else "0",
+                        "1" if active else "0",
+                        self._camera_workspace_status(region_id),
+                    ]
+                )
+                + "\n"
+            )
+        out_path.write_text("".join(lines), encoding="utf-8")
+        self.camera_workspace_audit_snapshot_writes += 1
 
     def _uses_region_mastery(self) -> bool:
         return (
