@@ -18,6 +18,7 @@ Date: 2026-06-14 KST
 | Stage 1 env | `MT4_CENTER_SUCCESS_RADIUS`, `MT4_TOP_DOWN_XY_SUCCESS_RADIUS` 유지 | center gate와 top-down XY gate를 따로 override 가능하게 함 | `source/mirobot_reach_direct/mirobot_coordinate_curriculum_env.py` |
 | Stage 1 logging | `camera_workspace_audit.csv` 추가 | operational/visible_learning_failed/camera_excluded를 분리 | `docs/records/training/20260614_stage1_cameraaudit_operating_workspace_analysis.md` |
 | Stage 1 logging | `region_mastery.csv`에 best center/top-down XY 정보 보강 | mastered 성공의 품질을 추적 | `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md` |
+| 문서 기록 | 다음 학습 제안 체크포인트 추가 | `18mm -> reward 보강 -> 15mm -> 16..20 확장` 순서를 명확화 | `docs/DECISIONS_AND_PROPOSALS.md` |
 
 ## 2026-06-13
 
