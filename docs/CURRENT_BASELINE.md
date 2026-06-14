@@ -47,6 +47,17 @@ MT4 Stage 1은 camera-aligned 5x5 plane 기준 기본 운영 영역을 `1..14`�
 
 상세 누적 표는 `docs/TRAINING_HISTORY.md`에 둔다.
 
+## 현재 판단표
+
+| 질문 | 수치 근거 | 판단 |
+| --- | --- | --- |
+| 실제 로봇을 움직여도 되는가? | Safety Gate 미완료 | 아직 보류 |
+| Stage 1 운영 영역은 어디까지인가? | camera-audit `14/25` mastered, `1..14` operational | 기본 운영은 `1..14` |
+| `15..25`는 카메라 문제인가? | `camera_excluded=0/25`, target stereo/camera match 안정 | 아니다. `visible_learning_failed` |
+| 전체 25영역을 바로 다시 돌릴까? | `15..25`에서 새 성공 `0`, skip-stalled 재현 | 아니다. focus region이 우선 |
+| `16..20` 중 어디가 제일 막히나? | region `16`: `20mm` 통과 후 `15/12mm` 실패 | region `16` 우선 |
+| 목표 `12mm`에 도달한 영역은? | region `18/19/20` each `10` successes | `18..20`은 연구 기준 통과 |
+
 ## 현재 Workspace
 
 | 항목 | 값 |

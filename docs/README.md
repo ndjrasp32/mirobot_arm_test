@@ -29,6 +29,28 @@ Stage 1 camera-aligned 5x5 plane의 기본 운영 영역은 아직 `1..14`다. `
 
 다음 병목은 region `16`의 final center/top-down XY precision이다. `18..20`은 12mm까지 통과했지만 isolated focus 결과이므로, 전체 운영 workspace로 승격하려면 region `16/17` 보강 후 `16..20` 묶음 재검증이 필요하다.
 
+## 변경 효과 요약
+
+처음 보는 사람은 아래 표만 보면 "무엇을 바꿨고, 무엇이 좋아졌고, 무엇이 아직 막혔는지"를 빠르게 볼 수 있다. 자세한 수치와 run directory는 `TRAINING_HISTORY.md`와 `ARTIFACT_INDEX.md`에 둔다.
+
+| 순서 | 변경/실험 | 좋아진 것 | 나빠지거나 남은 것 | 현재 결론 |
+| ---: | --- | --- | --- | --- |
+| 1 | Stage 0 workspace-entry baseline | task/runtime 포팅 완료 | `inside_workspace_rate=0.0000` | 바로 Stage 1 handoff 불가 |
+| 2 | Stage 0 reach-aware entrygate | `inside_workspace_rate=0.4856`, `workspace_entry_success_rate=0.4839` | `center_1cm_rate=0.0000` | entry policy로만 사용 |
+| 3 | Stage 1 9-cell sequential | `mastered_region_count=9` | final policy stability 부족 | 25-cell 확장 가능 |
+| 4 | Stage 1 25-cell skip-stalled | `14/25` mastered, 실패 영역 기록 완료 | `15..25` skipped, 새 성공 `0` | focus run 필요 |
+| 5 | camera audit | `camera_excluded=0/25` | `15..25`는 여전히 `visible_learning_failed` | 카메라보다 precision 문제 |
+| 6 | 16..20 radius ladder | `18..20`은 `12mm` 통과 | `16`은 `15/12mm` 실패, `17`은 `12mm` 실패 | `16/17` 보강이 다음 작업 |
+
+```text
+Stage 0 runtime
+  -> reach-aware entrygate: workspace entry 회복
+  -> Stage 1 9-cell: plane localization 확인
+  -> Stage 1 25-cell: 1..14 operational, 15..25 병목 분리
+  -> camera audit: camera exclusion 아님
+  -> 16..20 ladder: 16/17 final precision 병목 확정
+```
+
 ## 폴더 기준
 
 | 위치 | 용도 |

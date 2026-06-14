@@ -23,6 +23,7 @@ Date: 2026-06-14 KST
 | Stage 1 logging | `region_mastery.csv`에 best center/top-down XY 정보 보강 | mastered 성공의 품질을 추적 | `docs/records/20260614_stage1_regions16_20_radius_ladder_analysis.md` |
 | 문서 기록 | 다음 학습 제안 체크포인트 갱신 | `16`의 15/12mm 병목, `17`의 12mm 병목을 분리 | `docs/DECISIONS_AND_PROPOSALS.md` |
 | 학습 기록 | region `16..20` success-radius ladder 결과 반영 | `18..20`은 12mm, `17`은 15mm, `16`은 20mm까지 확인 | `docs/TRAINING_HISTORY.md` |
+| 문서 정리 | 변경별 효과 비교표와 흐름 도식 추가 | "무엇을 바꿨더니 무엇이 좋아지고 나빠졌는지"를 한눈에 보이게 함 | `README.md`, `docs/README.md`, `docs/TRAINING_HISTORY.md`, `docs/CURRENT_BASELINE.md`, `docs/DECISIONS_AND_PROPOSALS.md` |
 
 ## 2026-06-13
 

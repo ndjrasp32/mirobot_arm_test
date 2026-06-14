@@ -8,6 +8,27 @@ Stage 1 camera-aligned 5x5 plane은 기본 운영 영역을 `1..14`로 둔다. `
 
 2026-06-14 focus ladder에서 region `16..20`을 성공 반경 `35 -> 25 -> 20 -> 15 -> 12mm`로 줄여 확인했다. Region `18..20`은 최종 목표인 `12mm`까지 mastered됐다. Region `17`은 `15mm`까지 mastered됐지만 `12mm`는 실패했고, region `16`은 `20mm`까지 mastered된 뒤 `15mm`, `12mm`에서 실패했다.
 
+## 바꾼 것과 효과
+
+| 변경 | 이전 상태 | 이후 상태 | 좋아진 점 | 나빠지거나 남은 점 |
+| --- | --- | --- | --- | --- |
+| workspace-entry latch/gate 점검 | `workspace_entry_success_rate=0.0281`, `inside_workspace_rate=0.0000` | latch 성공과 실제 workspace 진입을 분리 | 허위 성공 해석을 줄임 | 초기 policy는 Stage 1 handoff 불가 |
+| reach-aware entrygate | phase split에서 `workspace_entry_success_rate=0.0000` | `workspace_entry_success_rate=0.4839`, `inside_workspace_rate=0.4856` | workspace entry가 실제로 생김 | `center_1cm_rate=0.0000` |
+| Stage 1 sequential mastery | 전체 plane을 한 번에 보기 어려움 | 9-cell에서 `mastered_region_count=9` | 영역별 curriculum이 작동함 | final checkpoint 안정성은 낮음 |
+| 25-cell skip-stalled | 막힌 영역에서 run 해석이 흐려짐 | `14/25` mastered, `11/25` skipped | 성공/실패 영역이 분리됨 | `15..25`는 12mm 조건에서 새 성공 `0` |
+| camera audit | 실패가 카메라인지 제어인지 불명확 | `camera_excluded=0/25`, `15..25=visible_learning_failed` | perception과 control 병목 분리 | 운영 영역은 여전히 `1..14` |
+| success-radius ladder | 16 이후를 단일 실패로만 봄 | `16=20mm`, `17=15mm`, `18..20=12mm` | region별 최소 가능 반경이 보임 | `16/17` 정밀도 보강 필요 |
+
+```text
+큰 변화 흐름:
+false/ambiguous success 제거
+  -> workspace entry 회복
+  -> 9영역 순차 성공
+  -> 25영역에서 1..14와 15..25 분리
+  -> camera failure가 아님을 확인
+  -> 16/17 precision 병목으로 범위 축소
+```
+
 ## 단계별 누적 요약
 
 | 날짜 | 단계 | 목적 | 결과 | 상세 기록 |

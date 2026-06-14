@@ -18,6 +18,17 @@ Stage 1 camera-audit sweep에서 `15..25`가 `visible_learning_failed`로 분류
 | 6 | region 16/17 1차 focus run | `20mm`까지 가능, region `16`의 `15mm` 실패를 확인했다. |
 | 7 | region 16..20 ladder 확장 | `18..20`은 `12mm`, `17`은 `15mm`, `16`은 `20mm`까지 통과했다. |
 
+## 변경별 효과 비교
+
+| 바꾼 것 | 좋아진 지표 | 나빠지거나 남은 지표 | 해석 |
+| --- | --- | --- | --- |
+| Stage 0 latch/gate 재검토 | 허위 성공 latch를 분리 | 초기 `inside_workspace_rate=0.0000` | 성공처럼 보이는 값을 그대로 믿으면 안 됨 |
+| reach-aware entrygate | `workspace_entry_success_rate=0.4839`, `inside_workspace_rate=0.4856` | `center_1cm_rate=0.0000` | workspace entry는 회복, 정밀 grasp는 아님 |
+| 9-cell sequential | `mastered_region_count=9` | final batch stability 부족 | curriculum 방식은 맞음 |
+| 25-cell skip-stalled | `1..14` mastered, `15..25` skipped로 분리 | `15..25` success count `0` | 전체 반복보다 병목 분리가 필요 |
+| camera audit | `camera_excluded=0/25` | `15..25`는 `visible_learning_failed` | perception보다 control/reward precision 병목 |
+| 16..20 ladder | `18..20`은 `12mm` 통과 | `16`은 `15/12mm`, `17`은 `12mm` 실패 | final center/top-down XY 보강 대상이 `16/17`로 좁혀짐 |
+
 ## 코드/스크립트 변경
 
 | 항목 | 내용 |

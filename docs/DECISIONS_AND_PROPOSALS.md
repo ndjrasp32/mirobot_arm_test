@@ -17,6 +17,18 @@ Date: 2026-06-14 KST
 | 다음 개선 | region `16` final center/top-down XY reward 보강 |
 | 전체 sweep 재시도 | `16/17`에서 `12mm` 성공 후 진행 |
 
+## 제안별 효과 요약
+
+| 제안/결정 | 확인된 효과 | 수치 근거 | 후속 판단 |
+| --- | --- | --- | --- |
+| Safety Gate 전 실제 motion 보류 | 시뮬레이션과 하드웨어 리스크를 분리 | 실제 MT4 motion `0`회 | 유지 |
+| workspace-entry 성공 조건 재검토 | latch 성공과 실제 진입을 구분 | 초기 `inside_workspace_rate=0.0000` | gate를 진단 지표로 재정의 |
+| reach-aware entrygate | workspace entry 회복 | `workspace_entry_success_rate=0.4839`, `inside_workspace_rate=0.4856` | Stage 0 entry policy로 사용 |
+| sequential region curriculum | 영역별 진행 상태를 추적 가능 | 9-cell `mastered_region_count=9` | 25-cell 확장 |
+| skip-stalled | 막힌 영역에서 run이 멈추지 않음 | `14/25` mastered, `11/25` skipped | 실패 영역 focus |
+| camera audit | 카메라 실패와 학습 실패를 분리 | `camera_excluded=0/25` | precision reward 우선 |
+| `35,25,20,15,12mm` ladder | 최소 성공 반경이 보임 | `16=20mm`, `17=15mm`, `18..20=12mm` | `16/17` 보강 후 재검증 |
+
 ## 대화와 결정 흐름
 
 | 순서 | 사용자 제안/요청 | Codex 제안/분석 | 최종 결정 |

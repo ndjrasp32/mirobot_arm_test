@@ -21,6 +21,16 @@ Stage 1 camera-aligned 5x5 plane에서는 `1..14`가 기본 운영 가능 영역
 
 다음 학습 판단은 region `16`의 `15mm/12mm` 병목을 먼저 줄이고, region `17`의 `12mm`를 재시도한 뒤 `16..20` 묶음 재검증으로 운영 승격 여부를 판단하는 것이다. 실제 로봇 구동은 `docs/CURRENT_BASELINE.md`의 Safety Gate를 통과한 뒤에만 다룬다.
 
+## 한눈에 보는 개선 효과
+
+| 바꾼 것 | 좋아진 점 | 남은 문제 | 다음 판단 |
+| --- | --- | --- | --- |
+| Stage 0 gate/reach-aware 재정의 | `inside_workspace_rate`가 초기 `0.0000`에서 entrygate 기준 `0.4856`까지 올라감 | `center_1cm_rate=0.0000`이라 최종 grasp policy는 아님 | Stage 1 bootstrap용으로만 사용 |
+| Stage 1 sequential region mastery | 9-cell plane에서 `mastered_region_count=9` 달성 | final checkpoint 안정성은 부족 | 25-cell 확장으로 진행 |
+| 25-cell skip-stalled 기록 | 막힌 곳에서 멈추지 않고 `14/25` mastered, `11/25` skipped로 상태가 남음 | `15..25`는 12mm 조건에서 새 성공 `0` | 실패 영역 focus run으로 분리 |
+| camera audit | `camera_excluded=0/25`, `15..25=visible_learning_failed`로 원인 분리 | 운영 영역은 아직 `1..14` | perception보다 precision 보강 우선 |
+| 16..20 success-radius ladder | `18..20`은 `12mm`, `17`은 `15mm`, `16`은 `20mm`까지 통과 | `16`의 `15/12mm`, `17`의 `12mm` 실패 | final center/top-down XY reward 보강 |
+
 ## 저장소 역할
 
 이 저장소에서 관리한다.
