@@ -58,7 +58,7 @@ Stage 1 5x5 plane 학습은 지금까지 내부 좌표로 정한 reach-limited w
 2. CSV에 25개 영역별 sample count, camera visibility, region match, estimate error, mastery 상태가 기록되는지 확인한다.
 3. `region_mastery.csv`와 `camera_workspace_audit.csv`를 같이 보고 운영 영역을 확정한다.
 4. 짧은 smoke run에서 CSV 생성만 확인한 뒤, 본 학습 run을 실행한다.
-5. 본 학습 결과는 `docs/records/training/`에 별도 dated record로 남긴다.
+5. 본 학습 결과는 `docs/records/`에 별도 dated record로 남긴다.
 
 ## 다음 작업
 

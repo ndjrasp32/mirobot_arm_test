@@ -25,20 +25,23 @@ Date: 2026-06-14 KST
 | `logs/run_output/` | 실행 stdout 전문이라 요약 문서로 대체 |
 | 외부 IsaacLab run directory | checkpoint/event/raw CSV가 크므로 경로와 요약만 기록 |
 
-`.gitignore`가 위 원시 로그 위치를 제외한다. 필요한 경우 로컬에서는 남겨두고, GitHub에는 요약 md와 대표 그래프/영상만 남긴다.
+필요한 경우 로컬에서는 원시 로그를 남겨두고, GitHub에는 요약 md와 대표 그래프/영상만 남긴다.
 
 ## 최신 주요 Run Directory
 
 | 날짜 | run | 위치 | 요약 |
 | --- | --- | --- | --- |
 | 2026-06-14 | Stage 1 camera-audit seq25 | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_12-37-16_mt4_coordinate_plane_seq25_cameraaudit_skipstalled3840_tipdown35mm_128env_3000iter` | `1..14` operational, `15..25` visible_learning_failed |
-| 2026-06-14 | region 16 success35mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_18-33-49_mt4_coordinate_plane_seq25_10success_success35mm_tipdown35mm_region16_128env_1200iter` | mastered |
-| 2026-06-14 | region 17 success35mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_18-34-41_mt4_coordinate_plane_seq25_10success_success35mm_tipdown35mm_region17_128env_1200iter` | mastered |
-| 2026-06-14 | region 16 success25mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_18-35-11_mt4_coordinate_plane_seq25_10success_success25mm_tipdown35mm_region16_128env_1200iter` | mastered |
-| 2026-06-14 | region 17 success25mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_18-37-15_mt4_coordinate_plane_seq25_10success_success25mm_tipdown35mm_region17_128env_1200iter` | mastered |
 | 2026-06-14 | region 16 success20mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_18-37-58_mt4_coordinate_plane_seq25_10success_success20mm_tipdown35mm_region16_128env_1200iter` | mastered |
-| 2026-06-14 | region 17 success20mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_18-40-40_mt4_coordinate_plane_seq25_10success_success20mm_tipdown35mm_region17_128env_1200iter` | mastered |
-| 2026-06-14 | region 16 success15mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_18-42-03_mt4_coordinate_plane_seq25_10success_success15mm_tipdown35mm_region16_128env_1200iter` | not mastered |
+| 2026-06-14 | region 16 success15mm retry | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_20-07-50_mt4_coordinate_plane_seq25_10success_success15mm_tipdown35mm_region16_128env_1200iter_batch16to20` | not mastered |
+| 2026-06-14 | region 16 success12mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_20-45-51_mt4_coordinate_plane_seq25_10success_success12mm_tipdown35mm_region16_128env_1200iter_batch16to20` | not mastered |
+| 2026-06-14 | region 17 success15mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_20-25-50_mt4_coordinate_plane_seq25_10success_success15mm_tipdown35mm_region17_128env_1200iter_batch16to20` | mastered |
+| 2026-06-14 | region 17 success12mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_21-04-51_mt4_coordinate_plane_seq25_10success_success12mm_tipdown35mm_region17_128env_1200iter_batch16to20` | not mastered |
+| 2026-06-14 | region 18 success12mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_21-22-51_mt4_coordinate_plane_seq25_10success_success12mm_tipdown35mm_region18_128env_1200iter_batch16to20` | mastered |
+| 2026-06-14 | region 19 success12mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_21-25-51_mt4_coordinate_plane_seq25_10success_success12mm_tipdown35mm_region19_128env_1200iter_batch16to20` | mastered |
+| 2026-06-14 | region 20 success12mm | `/home/spark-robotics/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_coordinate_curriculum_direct/2026-06-14_21-29-51_mt4_coordinate_plane_seq25_10success_success12mm_tipdown35mm_region20_128env_1200iter_batch16to20` | mastered |
+
+전체 `35/25/20/15/12mm` ladder run 목록은 `docs/records/20260614_stage1_regions16_20_radius_ladder_analysis.md`에 둔다.
 
 ## 대표 영상
 
@@ -71,6 +74,6 @@ Date: 2026-06-14 KST
 
 1. 최신 판단: `docs/CURRENT_BASELINE.md`
 2. 누적 학습 표: `docs/TRAINING_HISTORY.md`
-3. 상세 region/result 표: `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md`
-4. camera audit 상세: `docs/records/training/20260614_stage1_cameraaudit_operating_workspace_analysis.md`
+3. 상세 region/result 표: `docs/records/20260614_stage1_regions16_20_radius_ladder_analysis.md`
+4. camera audit 상세: `docs/records/20260614_stage1_cameraaudit_operating_workspace_analysis.md`
 5. 산출물 위치: 현재 파일

@@ -4,18 +4,19 @@ Date: 2026-06-14 KST
 
 ## 한 줄 요약
 
-MT4 Stage 1은 camera-aligned 5x5 plane 기준 `1..14`가 운영 가능 영역이고, region `16`, `17`은 성공 반경 `20mm`까지 학습 가능하다. `15mm`는 아직 실패했으므로 다음 목표는 `18mm -> 15mm` ladder와 final precision reward 보강이다.
+MT4 Stage 1은 camera-aligned 5x5 plane 기준 기본 운영 영역을 `1..14`로 유지한다. Focus ladder에서 region `18..20`은 `12mm`까지 mastered, region `17`은 `15mm`까지 mastered, region `16`은 `20mm`까지만 mastered됐다. 다음 병목은 region `16`의 `15/12mm` final precision과 region `17`의 `12mm`다.
 
 ## 오늘 보는 순서
 
 | 순서 | 파일 | 이유 |
 | ---: | --- | --- |
 | 1 | `README.md` | 저장소 전체 지도 |
-| 2 | `docs/CURRENT_BASELINE.md` | 현재 기준 |
-| 3 | `docs/TRAINING_HISTORY.md` | 누적 학습 흐름 |
-| 4 | `docs/ARTIFACT_INDEX.md` | 영상/그래프/CSV 위치 |
-| 5 | `docs/DECISIONS_AND_PROPOSALS.md` | 사용자 제안, Codex 제안, 결정사항 |
-| 6 | `docs/records/README.md` | 날짜별 상세 근거 |
+| 2 | `docs/README.md` | docs 폴더 지도 |
+| 3 | `docs/CURRENT_BASELINE.md` | 현재 기준 |
+| 4 | `docs/TRAINING_HISTORY.md` | 누적 학습 흐름 |
+| 5 | `docs/ARTIFACT_INDEX.md` | 영상/그래프/CSV 위치 |
+| 6 | `docs/DECISIONS_AND_PROPOSALS.md` | 사용자 제안, Codex 제안, 결정사항 |
+| 7 | `docs/CHANGELOG_CUMULATIVE.md` | 코드/스크립트/문서 변경 누적 |
 
 ## 현재 작업 범위
 
@@ -34,12 +35,15 @@ MT4 Stage 1은 camera-aligned 5x5 plane 기준 `1..14`가 운영 가능 영역�
 | 항목 | 현재값 |
 | --- | --- |
 | Stage 0 | workspace-entry/reach-aware 계열로 task/runtime 포팅 확인, 안정 policy handoff는 미완 |
-| Stage 1 기본 영역 | camera-audit sweep에서 `1..14` mastered/operational |
-| Stage 1 실패 영역 | `15..25`는 `visible_learning_failed`, camera exclusion은 아님 |
-| Region 16/17 focus | `35mm -> 25mm -> 20mm` mastered |
-| Region 16 precision probe | `15mm` 실패, `1200` iteration 동안 success `0` |
-| 운영 성공 반경 후보 | 당장은 `20mm` |
-| 다음 성공 반경 | `18mm` 중간 단계 후 `15mm` 재시도 |
+| Stage 1 기본 운영 영역 | camera-audit sweep에서 `1..14` mastered/operational |
+| Stage 1 실패 해석 | `15..25`는 `visible_learning_failed`, camera exclusion은 아님 |
+| Region 16 focus | `35/25/20mm` mastered, `15/12mm` 실패 |
+| Region 17 focus | `35/25/20/15mm` mastered, `12mm` 실패 |
+| Region 18 focus | `35/25/20/15/12mm` mastered |
+| Region 19 focus | `35/25/20/15/12mm` mastered |
+| Region 20 focus | `35/25/20/15/12mm` mastered |
+| 최종 목표 반경 | `12mm` |
+| 다음 병목 | region `16`의 15mm 진입, region `17`의 12mm 전환 |
 
 상세 누적 표는 `docs/TRAINING_HISTORY.md`에 둔다.
 
@@ -90,8 +94,8 @@ MT4 Stage 1은 camera-aligned 5x5 plane 기준 `1..14`가 운영 가능 영역�
 
 ## 다음 작업
 
-1. Region `16`에서 성공 반경 `18mm`를 먼저 확인한다.
-2. `18mm`가 mastered되면 final 25mm 이내 center/top-down XY reward를 보강하고 `15mm`를 재시도한다.
-3. Region `16`에서 통과한 조건을 region `17`에 복제한다.
-4. `16/17`의 `15mm` 성공 후에만 `15..25` 전체 sweep을 다시 연다.
+1. Region `16`의 `15mm` 실패 원인을 center distance와 top-down XY로 분리한다.
+2. Region `16`에 final 25mm 이내 center/top-down XY reward 보강을 적용하고 `15mm -> 12mm` 순서로 재시도한다.
+3. Region `17`은 `12mm`만 재시도하되, region `16` 보강이 효과 있으면 같은 조건을 복제한다.
+4. Region `16/17`이 `12mm`에 도달하면 `16..20` 묶음 재검증을 실행한다.
 5. 실제 robot motion은 Safety Gate 완료 전까지 보류한다.
