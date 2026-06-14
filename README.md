@@ -1,253 +1,89 @@
 # robotarm_mt4
 
-## 한국어
+WLKATA Mirobot/MT4 asset, hardware-transfer mapping, IsaacLab direct-RL training, and safe-simulation baseline repository.
 
-`robotarm_mt4`는 WLKATA Mirobot/MT4 asset, hardware mapping, Mars twin 확인용 IsaacLab direct RL 저장소입니다.
+이 저장소를 처음 열면 아래 순서로 보면 된다.
 
-학생용 staged curriculum과 긴 실험 archive는 `robotarm_student`에서 관리합니다. 이 저장소는 실제 MT4 이식에 가까운 asset/task 기준선, joint/action mapping, safety gate를 관리합니다.
+| 순서 | 파일 | 용도 |
+| ---: | --- | --- |
+| 1 | `docs/CURRENT_BASELINE.md` | 지금 기준, 최신 결과, 바로 다음 학습 판단 |
+| 2 | `docs/TRAINING_HISTORY.md` | Stage 0/1 누적 학습 기록과 결과 요약 |
+| 3 | `docs/ARTIFACT_INDEX.md` | 영상, 그래프, CSV, 외부 run directory 위치 |
+| 4 | `docs/CHANGELOG_CUMULATIVE.md` | 코드/스크립트/환경 기준 변경 누적 기록 |
+| 5 | `docs/DECISIONS_AND_PROPOSALS.md` | 사용자 제안, Codex 제안, 최종 결정사항 |
+| 6 | `docs/records/README.md` | 날짜별 상세 근거 기록 인덱스 |
 
-### 오늘부터 보는 기준
+## 현재 결론
 
-매일 시작할 때는 이 순서만 봅니다.
+2026-06-14 KST 기준 실제 MT4 motion은 아직 실행하지 않았다. 모든 최근 결과는 IsaacLab headless simulation 기준이다.
 
-1. `docs/CURRENT_BASELINE.md`
-2. `README.md`
-3. `docs/records/README.md`
-4. 세부 근거는 `docs/records/design/` 또는 `docs/records/training/`에서 필요한 항목만 확인
+Stage 1 camera-aligned 5x5 plane에서는 `1..14`가 운영 가능 영역이고, `15..25`는 카메라 문제가 아니라 중심 접근/정밀 제어 병목으로 분류한다. Focus run 결과 region `16`, `17`은 성공 반경 `20mm`까지 mastered됐고, region `16`의 `15mm`는 `1200` iteration 동안 성공 0회로 실패했다.
 
-새 기록은 asset, mapping, safety, task 기준이 실제로 바뀌거나 학습 결과를 남겨야 할 때만 하나 추가합니다. 단순 실행 로그, plot 결과, 임시 확인은 README 기준으로 승격하지 않습니다.
+다음 학습 판단은 `15mm` 직행 반복보다 `18mm -> 15mm` 중간 단계와 final precision reward 보강이다. 실제 로봇 구동은 `docs/CURRENT_BASELINE.md`의 Safety Gate를 통과한 뒤에만 다룬다.
 
-### 리셋 이유
+## 저장소 역할
 
-2026-05-22 기준으로 작업 기준을 리셋했습니다. 이전 상태에서는 날짜별 노트가 늘어났고, 저장소 이름이 `robotarm_student`와 `robotarm_mt4`로 정리되었으며, 학생용 curriculum과 하드웨어 전이 책임이 섞여 있었습니다. 이제 이 저장소는 MT4 asset fidelity, hardware mapping, safe simulation 기준선으로만 봅니다. 오래된 기록은 `docs/records/archive/`에 보존합니다.
+이 저장소에서 관리한다.
 
-### 현재 asset
+- MT4/Mirobot URDF/USD asset 기준
+- Isaac joint/action to MT4 hardware command mapping
+- camera-aligned operating workspace와 perception baseline
+- MT4 coordinate curriculum 학습 기록과 산출물
+- 실제 로봇 motion 전 safety gate
 
-- 원본 ROS2 xacro: `/home/spark-robotics/work/robotarm/mt4_ws/src/complex_mobile_robot_description/urdf/complex_mobile_robot_description.urdf.xacro`
-- Isaac용 clean URDF 복사본: `assets/urdf/mirobot_wlkata_isaac_clean.urdf`
-- Isaac용 USD 복사본: `assets/usd/mirobot_real/mt4_from_wlkata_isaac_clean.usd`
-- 공식 WLKATA MT4 URDF 기록: `docs/records/design/20260518_official_mt4_urdf_check.md`
+이 저장소에서 관리하지 않는다.
 
-### 첫 task
+- 학생용 장기 curriculum archive
+- 실제 로봇 무검증 motion 실행
+- 원시 stdout/launch 로그 전체 보관
 
-- Gym task: `Mirobot-Reach-Pregrasp-Direct-v0`
-- Python package: `source/mirobot_reach_direct`
-- 학습 로그: `~/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_reach_pregrasp_direct`
-- plot/checkpoint 선택 결과: `logs/plots`
+## 핵심 Task
 
-### 화성 로버 디지털 트윈 task
+| 구분 | 값 |
+| --- | --- |
+| Python package | `source/mirobot_reach_direct` |
+| Reach task | `Mirobot-Reach-Pregrasp-Direct-v0` |
+| Coordinate Stage 1 task | `Mirobot-Coordinate-Plane-Direct-v0` |
+| Coordinate Stage 2 task | `Mirobot-Coordinate-Volume-Direct-v0` |
+| Mars twin tasks | `Mirobot-Mars-Twin-{Pick,Place,Stack,Push,Pull}-Direct-v0` |
 
-화성 중력 `-3.711 m/s^2`, 동적 큐브 충돌, 마찰, home pose reset을 적용한 확인용 direct RL 환경입니다.
+## 반복 실행 명령
 
-- `Mirobot-Mars-Twin-Pick-Direct-v0`
-- `Mirobot-Mars-Twin-Place-Direct-v0`
-- `Mirobot-Mars-Twin-Stack-Direct-v0`
-- `Mirobot-Mars-Twin-Push-Direct-v0`
-- `Mirobot-Mars-Twin-Pull-Direct-v0`
-
-바로 열어서 확인:
-
-```bash
-./scripts/view_mirobot_mars_twin_gui.sh --mission push
-./scripts/view_mirobot_mars_twin_gui.sh --mission pull
-./scripts/view_mirobot_mars_twin_gui.sh --mission stack
-```
-
-학습 실행:
-
-```bash
-./scripts/train_mirobot_mars_twin.sh push
-./scripts/train_mirobot_mars_twin.sh pull
-./scripts/train_mirobot_mars_twin.sh pick
-./scripts/train_mirobot_mars_twin.sh place
-./scripts/train_mirobot_mars_twin.sh stack
-```
-
-현재 환경은 물리 기반 디지털 트윈의 첫 기준선입니다. `push/pull`은 동적 물체 접촉 검증에 바로 쓸 수 있고, `pick/place/stack`은 실제 MT4 gripper finger/파지 구조가 URDF에 충분히 표현되어 있는지 확인한 뒤 grasp attachment 또는 gripper collision 모델을 보강해야 합니다.
-
-### 실제 MT4 perception 기준
-
-실제 MT4 기기 학습과 hardware-transfer 판단은 이 저장소에서 관리합니다. 목표 지점 포착과 높이 추정은 Pi Camera 두 대 구성을 기준으로 진행합니다.
-
-- body/front camera: 로봇팔 몸통 전면에 고정하고 작업 공간 전체와 목표 물체를 관찰합니다.
-- wrist/downward camera: 집게 끝 아래쪽을 향하게 고정해 grasp 직전의 상대 위치, 높이, 접촉 후보 영역을 관찰합니다.
-- 초기 전환은 raw image end-to-end 정책이 아니라, 카메라 extrinsic 보정과 target position/height 추정값을 내부 좌표 baseline과 비교하는 방식으로 시작합니다.
-- 정책 observation은 단계적으로 전환합니다: 내부 target 좌표 baseline -> 카메라 추정 좌표 -> 필요 시 image feature 포함.
-- 실제 로봇 motion은 아래 safety gate를 통과하기 전까지 실행 기준으로 올리지 않습니다.
-
-참고 설계 기록: `docs/records/design/20260608_dual_pi_camera_perception_plan.md`
-student coordinate curriculum handoff: `docs/records/design/20260610_student_coordinate_handoff_and_training_plan.md`
-MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
-camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
-latest Stage 1 focus result: `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md`
-
-### 실제 MT4 이식 기준
-
-- 정책 action은 실제 MT4 arm-angle 명령으로 보낼 수 있는 4축만 사용합니다: `joint_1`, `joint_2_1`, `joint_3`, `gripper_body_joint`.
-- 배포 시 매핑은 `X -> joint_1`, `Y -> joint_2_1`, `Z -> joint_3`, `A -> gripper_body_joint`입니다.
-- `joint_2_2`, `joint_4`, `joint_l4`는 URDF/USD에는 남겨두되 정책 action으로 학습하지 않습니다.
-- 현재 내부 target은 `joint_2_2 = joint_2_1`, `joint_4 = 0.65`, `joint_l4 = 0.35`입니다.
-- 매핑/주의사항 기록: `docs/records/design/20260518_mt4_hardware_transfer_mapping.md`
-
-### 실행
+시각 확인:
 
 ```bash
 ./scripts/inspect_mirobot_asset.sh
 ./scripts/check_mirobot_joint_limits.sh
 ./scripts/show_mt4_hardware_mapping_gui.sh
-./scripts/show_mt4_hardware_mapping_gui.sh --profile workspace
-./scripts/sweep_mirobot_joint_limits_gui.sh
-./scripts/sweep_mirobot_joint_limits_gui.sh --mode upper
 ./scripts/view_mirobot_mars_twin_gui.sh --mission push
-./scripts/train_mirobot_visual_16_300.sh
-./scripts/train_mirobot_reach_128_1000.sh
-./scripts/train_mirobot_mars_twin.sh push
+```
+
+학습:
+
+```bash
 ./scripts/train_mirobot_coordinate_stage0_workspace_entry_128_300.sh
 ./scripts/train_mirobot_coordinate_stage1_plane_128_600.sh
+./scripts/train_mirobot_coordinate_stage1_plane_sweep25_skip.sh
 ./scripts/train_mirobot_coordinate_stage2_volume_128_600.sh
+```
+
+Stage 1 성공 반경 ladder 예:
+
+```bash
+MT4_STAGE1_SUCCESS_RADIUS=0.035 ./scripts/train_mirobot_coordinate_stage1_plane_128_600.sh
+MT4_STAGE1_SUCCESS_RADIUS=0.025 ./scripts/train_mirobot_coordinate_stage1_plane_128_600.sh
+MT4_STAGE1_SUCCESS_RADIUS=0.020 ./scripts/train_mirobot_coordinate_stage1_plane_128_600.sh
+```
+
+분석:
+
+```bash
 ./scripts/plot_and_select_mirobot_best.sh
 ./scripts/play_mirobot_best.sh
 ```
 
-실제 집기 정책으로 확장하기 전에 joint 대응, end-effector 축, gripper center offset을 GUI에서 반드시 확인해야 합니다.
+## 문서 운영 규칙
 
-### MT4 coordinate workspace
+새로 온 사람은 `docs/CURRENT_BASELINE.md`와 `docs/TRAINING_HISTORY.md`만 읽어도 현재 상태를 이해할 수 있어야 한다. 날짜별 상세 md는 근거 보관용이며, 최신 판단을 직접 찾는 시작점으로 쓰지 않는다.
 
-2026-06-12 기준으로 Stage 1은 5x5 plane curriculum, Stage 2는 5x5x4 volume curriculum을 사용합니다. 7/9 상단열 병목 이후 작업 박스는 로봇팔 쪽으로 10mm 당긴 arm/end 기준을 사용하고, 미래 하향 장착 집게 끝점을 반영해 target workspace는 35mm 낮춥니다.
-
-- arm/end center: `(-0.068, 0.000, 0.103)`
-- target center after tool-tip offset: `(-0.068, 0.000, 0.068)`
-- size: `(0.045, 0.095, 0.055)`
-- target min: `(-0.0905, -0.0475, 0.0405)`
-- target max: `(-0.0455, 0.0475, 0.0955)`
-- Stage 1 5x5 plane x: `-0.0680`
-- Stage 1 5x5 plane y/z cell size: `(0.0190, 0.0110)`
-- Stage 2 5x5x4 cell size: `(0.0090, 0.0190, 0.0138)`
-
-좌/우 body camera stereo projection으로 target 좌표를 추정하고, gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보며 최종 상대 위치, depth, visibility를 확인합니다. 정책 관측에는 gripper camera forward 벡터도 포함해 팔의 상하좌우 회전으로 생기는 시야 변화를 학습 입력에 반영합니다. 2026-06-14 Stage 1 camera-audit sweep 기준 운영 가능 영역은 `1..14`이고, `15..25`는 카메라는 안정적이지만 학습이 실패한 `visible_learning_failed` 영역입니다. 이후 region `16`, `17` focus run에서는 성공 반경 `20mm`까지 mastered됐고, region `16`의 `15mm` run은 실패했습니다. 실제 로봇 motion은 Safety Gate 이후에만 다룹니다.
-
-## English
-
-`robotarm_mt4` is the IsaacLab direct-RL repository for WLKATA Mirobot/MT4 assets, hardware mapping, and Mars twin checks.
-
-Student staged curriculum work and long experiment archives belong in `robotarm_student`. This repository owns the asset/task baseline closest to real MT4 transfer, joint/action mapping, and safety gates.
-
-### Daily Starting Point
-
-Start each day in this order:
-
-1. `docs/CURRENT_BASELINE.md`
-2. `README.md`
-3. `docs/records/README.md`
-4. Open only the needed detailed record under `docs/records/design/` or `docs/records/training/`
-
-Add a new record only when the asset, mapping, safety, or task baseline actually changes, or when a training result needs to be preserved. Do not promote routine command output, plot results, or temporary checks into the README baseline.
-
-### Reset Rationale
-
-The working baseline was reset on 2026-05-22. The previous state had too many dated notes, the repositories had been renamed into `robotarm_student` and `robotarm_mt4`, and student curriculum work was mixed with hardware-transfer responsibilities. From now on, this repository is the baseline for MT4 asset fidelity, hardware mapping, and safe simulation. Older records are preserved under `docs/records/archive/`.
-
-### Current Asset
-
-- source ROS2 xacro: `/home/spark-robotics/work/robotarm/mt4_ws/src/complex_mobile_robot_description/urdf/complex_mobile_robot_description.urdf.xacro`
-- Isaac clean URDF copy: `assets/urdf/mirobot_wlkata_isaac_clean.urdf`
-- Isaac USD copy: `assets/usd/mirobot_real/mt4_from_wlkata_isaac_clean.usd`
-- official WLKATA MT4 URDF record: `docs/records/design/20260518_official_mt4_urdf_check.md`
-
-### First Task
-
-- Gym task: `Mirobot-Reach-Pregrasp-Direct-v0`
-- Python package: `source/mirobot_reach_direct`
-- training logs: `~/work/isaac/src/IsaacLab/logs/rsl_rl/mirobot_reach_pregrasp_direct`
-- plot/checkpoint selection output: `logs/plots`
-
-### Mars Rover Digital Twin Tasks
-
-These direct-RL environments apply Mars gravity `-3.711 m/s^2`, dynamic cube collision, friction, and home-pose reset.
-
-- `Mirobot-Mars-Twin-Pick-Direct-v0`
-- `Mirobot-Mars-Twin-Place-Direct-v0`
-- `Mirobot-Mars-Twin-Stack-Direct-v0`
-- `Mirobot-Mars-Twin-Push-Direct-v0`
-- `Mirobot-Mars-Twin-Pull-Direct-v0`
-
-Open visual checks:
-
-```bash
-./scripts/view_mirobot_mars_twin_gui.sh --mission push
-./scripts/view_mirobot_mars_twin_gui.sh --mission pull
-./scripts/view_mirobot_mars_twin_gui.sh --mission stack
-```
-
-Run training:
-
-```bash
-./scripts/train_mirobot_mars_twin.sh push
-./scripts/train_mirobot_mars_twin.sh pull
-./scripts/train_mirobot_mars_twin.sh pick
-./scripts/train_mirobot_mars_twin.sh place
-./scripts/train_mirobot_mars_twin.sh stack
-```
-
-The current environment is the first physics-based digital-twin baseline. `push/pull` can immediately validate dynamic-object contact. `pick/place/stack` need gripper-finger or grasp-attachment modeling after confirming whether the real MT4 gripper structure is represented well enough in the URDF.
-
-### Real MT4 Perception Baseline
-
-Real MT4 device learning and hardware-transfer decisions belong in this repository. Target detection and height estimation should use a two Pi Camera setup as the current baseline.
-
-- body/front camera: fixed on the front of the robot body to observe the workspace and target object.
-- wrist/downward camera: fixed near the gripper tip and aimed downward to observe final relative pose, height, and contact/grasp candidates.
-- Start the transition with camera extrinsic calibration and target position/height estimates compared against the internal-coordinate baseline, not raw-image end-to-end policy learning.
-- Transition policy observations in stages: internal target-coordinate baseline -> camera-estimated target coordinates -> image features if needed.
-- Do not promote real robot motion into the working baseline until the safety gate below is satisfied.
-
-Reference design note: `docs/records/design/20260608_dual_pi_camera_perception_plan.md`
-Student coordinate curriculum handoff: `docs/records/design/20260610_student_coordinate_handoff_and_training_plan.md`
-MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
-camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
-latest Stage 1 focus result: `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md`
-
-### Real MT4 Transfer Rule
-
-- Policy actions use only the four joints that can be sent as real MT4 arm-angle commands: `joint_1`, `joint_2_1`, `joint_3`, `gripper_body_joint`.
-- Deployment mapping is `X -> joint_1`, `Y -> joint_2_1`, `Z -> joint_3`, `A -> gripper_body_joint`.
-- `joint_2_2`, `joint_4`, and `joint_l4` remain in URDF/USD but are not policy actions.
-- Current internal targets are `joint_2_2 = joint_2_1`, `joint_4 = 0.65`, and `joint_l4 = 0.35`.
-- Mapping and caveat record: `docs/records/design/20260518_mt4_hardware_transfer_mapping.md`
-
-### Commands
-
-```bash
-./scripts/inspect_mirobot_asset.sh
-./scripts/check_mirobot_joint_limits.sh
-./scripts/show_mt4_hardware_mapping_gui.sh
-./scripts/show_mt4_hardware_mapping_gui.sh --profile workspace
-./scripts/sweep_mirobot_joint_limits_gui.sh
-./scripts/sweep_mirobot_joint_limits_gui.sh --mode upper
-./scripts/view_mirobot_mars_twin_gui.sh --mission push
-./scripts/train_mirobot_visual_16_300.sh
-./scripts/train_mirobot_reach_128_1000.sh
-./scripts/train_mirobot_mars_twin.sh push
-./scripts/train_mirobot_coordinate_stage0_workspace_entry_128_300.sh
-./scripts/train_mirobot_coordinate_stage1_plane_128_600.sh
-./scripts/train_mirobot_coordinate_stage2_volume_128_600.sh
-./scripts/plot_and_select_mirobot_best.sh
-./scripts/play_mirobot_best.sh
-```
-
-Before extending into real grasping policies, confirm joint correspondence, end-effector axis, and gripper-center offset in the GUI.
-
-### MT4 Coordinate Workspace
-
-As of 2026-06-12, Stage 1 uses a 5x5 plane curriculum and Stage 2 uses a 5x5x4 volume curriculum. After the region 7/9 upper-row bottleneck, the arm/end workspace is pulled 10 mm toward the robot, and the target workspace is shifted 35 mm lower for the future down-mounted gripper tip.
-
-- arm/end center: `(-0.068, 0.000, 0.103)`
-- target center after tool-tip offset: `(-0.068, 0.000, 0.068)`
-- size: `(0.045, 0.095, 0.055)`
-- target min: `(-0.0905, -0.0475, 0.0405)`
-- target max: `(-0.0455, 0.0475, 0.0955)`
-- Stage 1 5x5 plane x: `-0.0680`
-- Stage 1 5x5 plane y/z cell size: `(0.0190, 0.0110)`
-- Stage 2 5x5x4 cell size: `(0.0090, 0.0190, 0.0138)`
-
-Left/right body-camera stereo projection estimates the target coordinate. The gripper camera points along the gripper-body `(+X, 0, -Z)` 45-degree axis from outside toward the gripper/target side, then validates final relative pose, depth, and visibility. The policy observation includes the dynamic gripper-camera forward vector so arm rotation changes the learned camera view. The 2026-06-14 Stage 1 camera-audit sweep marks `1..14` as operational and `15..25` as camera-stable but learning-failed. Focused region `16` and `17` runs then mastered down to a `20mm` success radius, while region `16` failed at `15mm`. Keep real robot motion behind the Safety Gate.
+원시 로그는 `training_logs/run_stdout/`, `training_logs/session_logs/`, `training_logs/launch/`, `logs/` 아래에 남을 수 있지만 `.gitignore` 대상이다. GitHub에는 요약 문서, 대표 그래프, 대표 영상, CSV만 올린다.

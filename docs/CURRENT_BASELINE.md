@@ -1,108 +1,85 @@
 # 현재 기준 - robotarm_mt4
 
-Date: 2026-06-12 KST
+Date: 2026-06-14 KST
 
-## 한국어
+## 한 줄 요약
 
-### 저장소 역할
+MT4 Stage 1은 camera-aligned 5x5 plane 기준 `1..14`가 운영 가능 영역이고, region `16`, `17`은 성공 반경 `20mm`까지 학습 가능하다. `15mm`는 아직 실패했으므로 다음 목표는 `18mm -> 15mm` ladder와 final precision reward 보강이다.
 
-`robotarm_mt4`는 Mirobot/MT4 asset과 hardware-transfer baseline 저장소입니다.
+## 오늘 보는 순서
 
-이 저장소에서 관리하는 범위:
+| 순서 | 파일 | 이유 |
+| ---: | --- | --- |
+| 1 | `README.md` | 저장소 전체 지도 |
+| 2 | `docs/CURRENT_BASELINE.md` | 현재 기준 |
+| 3 | `docs/TRAINING_HISTORY.md` | 누적 학습 흐름 |
+| 4 | `docs/ARTIFACT_INDEX.md` | 영상/그래프/CSV 위치 |
+| 5 | `docs/DECISIONS_AND_PROPOSALS.md` | 사용자 제안, Codex 제안, 결정사항 |
+| 6 | `docs/records/README.md` | 날짜별 상세 근거 |
 
-- Mirobot/MT4 URDF/USD asset check
-- joint/action mapping과 hardware-transfer notes
-- 실제 asset에 가까운 Mars twin simulation check
-- visual inspection, plotting, checkpoint utility scripts
+## 현재 작업 범위
 
-넓은 학생용 curriculum archive와 staged classroom experiment는 `robotarm_student`에서 관리합니다.
+이 저장소는 실제 MT4 이식에 가까운 기준만 관리한다.
 
-### 현재 기준
+| 포함 | 제외 |
+| --- | --- |
+| Mirobot/MT4 URDF/USD asset check | 학생용 장기 curriculum archive |
+| Isaac action to MT4 command mapping | 검증 없는 실제 robot motion |
+| camera/perception baseline | 원시 stdout/launch 로그 전체 Git 보관 |
+| coordinate curriculum 학습 결과 | 임시 실험 메모의 README 승격 |
+| Safety Gate | hardware safety gate 이전의 자동 구동 |
 
-Active task package:
+## 최신 학습 상태
 
-- `source/mirobot_reach_direct`
+| 항목 | 현재값 |
+| --- | --- |
+| Stage 0 | workspace-entry/reach-aware 계열로 task/runtime 포팅 확인, 안정 policy handoff는 미완 |
+| Stage 1 기본 영역 | camera-audit sweep에서 `1..14` mastered/operational |
+| Stage 1 실패 영역 | `15..25`는 `visible_learning_failed`, camera exclusion은 아님 |
+| Region 16/17 focus | `35mm -> 25mm -> 20mm` mastered |
+| Region 16 precision probe | `15mm` 실패, `1200` iteration 동안 success `0` |
+| 운영 성공 반경 후보 | 당장은 `20mm` |
+| 다음 성공 반경 | `18mm` 중간 단계 후 `15mm` 재시도 |
 
-Main task IDs:
+상세 누적 표는 `docs/TRAINING_HISTORY.md`에 둔다.
 
-- `Mirobot-Reach-Pregrasp-Direct-v0`
-- `Mirobot-Mars-Twin-Pick-Direct-v0`
-- `Mirobot-Mars-Twin-Place-Direct-v0`
-- `Mirobot-Mars-Twin-Stack-Direct-v0`
-- `Mirobot-Mars-Twin-Push-Direct-v0`
-- `Mirobot-Mars-Twin-Pull-Direct-v0`
+## 현재 Workspace
 
-현재 hardware-transfer rule:
+| 항목 | 값 |
+| --- | --- |
+| arm/end center | `(-0.068, 0.000, 0.103)` |
+| target center, tool-tip down offset 반영 | `(-0.068, 0.000, 0.068)` |
+| target workspace size | `(0.045, 0.095, 0.055)` |
+| target min | `(-0.0905, -0.0475, 0.0405)` |
+| target max | `(-0.0455, 0.0475, 0.0955)` |
+| Stage 1 plane | 5x5, x=`-0.0680` |
+| Stage 1 cell size | y/z `(0.0190, 0.0110)` |
+| Stage 2 volume | 5x5x4 |
+| Stage 2 cell size | x/y/z `(0.0090, 0.0190, 0.0138)` |
 
-- policy action은 네 개의 MT4 command-facing joint로 제한합니다.
-- mapping reference: `docs/records/design/20260518_mt4_hardware_transfer_mapping.md`
-- dynamic object contact reference: `docs/records/design/20260518_dynamic_cube_target.md`
-- official WLKATA MT4 URDF check reference: `docs/records/design/20260518_official_mt4_urdf_check.md`
-- perception baseline reference: `docs/records/design/20260608_dual_pi_camera_perception_plan.md`
-- student coordinate curriculum handoff: `docs/records/design/20260610_student_coordinate_handoff_and_training_plan.md`
-- camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
-- latest MT4 coordinate Stage 0 result: `docs/records/training/20260611_reach_aware_stage0_entrygate_600iter_analysis.md`
-- MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
-- latest MT4 coordinate Stage 1 plane result: `docs/records/training/20260614_stage1_cameraaudit_operating_workspace_analysis.md`
-- latest MT4 coordinate Stage 1 focus result: `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md`
+## Hardware Transfer Rule
 
-### 실제 MT4 Perception Baseline
+| MT4 command | Isaac joint |
+| --- | --- |
+| X | `joint_1` |
+| Y | `joint_2_1` |
+| Z | `joint_3` |
+| A | `gripper_body_joint` |
 
-실제 MT4 기기 학습은 이 저장소에서만 관리합니다. 학생용 simulation curriculum은 `robotarm_student`에 고정하고, 이 저장소에서는 실제 asset, hardware mapping, safety gate와 연결되는 perception 기준만 관리합니다.
+`joint_2_2`, `joint_4`, `joint_l4`는 URDF/USD에는 남겨두지만 policy action으로 쓰지 않는다. 현재 내부 target은 `joint_2_2 = joint_2_1`, `joint_4 = 0.65`, `joint_l4 = 0.35`다.
 
-카메라 구성:
+## Perception Baseline
 
-- body/front camera: 로봇팔 몸통 전면에 고정하고 작업 공간 전체와 목표 물체를 관찰한다.
-- wrist/downward camera: 집게 끝 아래쪽을 향하게 고정해 grasp 직전의 상대 위치, 높이, 접촉 후보 영역을 관찰한다.
+| 카메라 | 역할 |
+| --- | --- |
+| body/front camera | 작업 공간 전체와 target 관찰 |
+| wrist/downward camera | grasp 직전 상대 위치, 높이, 접촉 후보 확인 |
 
-학습 전환 기준:
+전환 순서는 내부 target 좌표 baseline, camera-estimated target 좌표, 필요 시 image feature 포함 순서다. 현재 region `15..25` 실패는 카메라 가시성 실패가 아니라 제어/reward precision 병목으로 기록한다.
 
-1. 내부 target 좌표를 쓰는 기존 Isaac baseline을 hardware-transfer 비교 기준으로 유지한다.
-2. 두 카메라의 mount pose, field of view, occlusion을 simulation에서 먼저 확인한다.
-3. 카메라에서 추정한 target position/height를 내부 좌표와 비교해 오차를 기록한다.
-4. policy observation을 내부 좌표에서 카메라 추정 좌표로 바꾼다.
-5. 좌표 추정이 안정화된 뒤에만 image feature 또는 end-to-end vision policy를 검토한다.
-6. 실제 로봇 motion은 Safety Gate를 통과한 뒤에만 다룬다.
+## Safety Gate
 
-### 리셋 이유
-
-2026-05-22 기준으로 baseline을 리셋했습니다. 이전 작업 상태는 날짜별 노트가 너무 많고, 저장소 이름이 바뀌었으며, 학생용 curriculum과 하드웨어 전이 책임이 섞여 있었습니다. 이제 이 저장소는 Mirobot/MT4 asset과 hardware-transfer baseline입니다. 이전 기록은 daily source of truth가 아니라 `docs/records/archive/` 보관 기록입니다.
-
-### 실제 시작 순서
-
-오늘은 여기서 시작합니다.
-
-1. visual command로 scene 또는 task를 먼저 확인합니다.
-2. scene이 맞아 보일 때만 training command를 하나 실행합니다.
-3. checkpoint를 plot/select합니다.
-4. 카메라 mount와 target position/height 추정은 내부 좌표 baseline과 비교해 기록합니다.
-5. MT4 asset, mapping, perception, safety, task 기준이 바뀐 경우에만 이 파일을 갱신합니다.
-
-Visual inspection:
-
-```bash
-./scripts/view_mirobot_mars_twin_gui.sh --mission push
-./scripts/view_mirobot_mars_twin_gui.sh --mission pull
-```
-
-Repeatable training:
-
-```bash
-./scripts/train_mirobot_reach_128_1000.sh
-./scripts/train_mirobot_mars_twin.sh push
-./scripts/train_mirobot_coordinate_stage0_workspace_entry_128_300.sh
-./scripts/train_mirobot_coordinate_stage1_plane_128_600.sh
-./scripts/train_mirobot_coordinate_stage1_plane_sweep25_skip.sh
-./scripts/train_mirobot_coordinate_stage2_volume_128_600.sh
-./scripts/plot_and_select_mirobot_best.sh
-./scripts/play_mirobot_best.sh
-```
-
-2026-06-10 Stage 0 coordinate workspace-entry 학습은 task/runtime 포팅 확인에는 성공했지만, `inside_workspace_rate=0.0000`으로 끝났습니다. 2026-06-11 top-down reach sampling 기준으로 MT4 작업 박스를 다시 잡았고, 2026-06-12 region 7/9 병목 이후 arm/end 기준 중심을 `(-0.068, 0.000, 0.103)`으로 로봇팔 쪽에 10mm 당겼습니다. 미래 하향 장착 집게 끝점을 반영해 target workspace는 35mm 낮춘 `(-0.068, 0.000, 0.068)`, `size=(0.045, 0.095, 0.055)`를 사용합니다. gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보게 두고, 관측에는 동적 gripper-camera forward 벡터를 포함합니다. 2026-06-14 Stage 1 camera-audit sweep에서는 `1..14`가 `operational`, `15..25`가 `visible_learning_failed`, `camera_excluded=0`으로 기록됐습니다. 이후 region `16`, `17` focus run은 성공 반경 `20mm`까지 mastered됐고, region `16`의 `15mm` run은 `1200` iteration 동안 성공 0회로 실패했습니다. 학습 순서는 Stage 0 workspace-entry, Stage 1 5x5 plane, Stage 1 focus precision ladder, Stage 2 5x5x4 volume입니다.
-
-### Safety Gate
-
-실제 로봇 motion은 아래 항목이 기록되기 전까지 실행 기준으로 올리지 않습니다.
+실제 MT4 motion은 아래 항목이 기록되기 전까지 실행 기준으로 올리지 않는다.
 
 - home pose joint table
 - conservative joint limits
@@ -111,151 +88,10 @@ Repeatable training:
 - low-speed single-joint check
 - emergency stop and recovery procedure
 
-### 문서 운영 규칙
+## 다음 작업
 
-- 문서 인덱스와 기록 양식은 `docs/records/README.md`를 따른다.
-- 기준 설계 기록은 `docs/records/design/`에 둔다.
-- 학습 결과와 분석 기록은 `docs/records/training/`에 둔다.
-- 현재 기준에 직접 쓰지 않는 과거 기록은 `docs/records/archive/`에 둔다.
-- routine command output은 새 노트로 만들지 않습니다.
-- 새 관찰은 dated record로 남기되, MT4 asset, mapping, safety, task baseline이 바뀔 때만 이 파일을 갱신합니다.
-- 오늘 기준 판단은 `README.md`와 이 파일만으로 끝나야 합니다.
-
-### 다음 작업
-
-1. 이 저장소를 MT4 asset fidelity, mapping, safe simulation에 집중시킨다.
-2. `pick/place/stack`을 stable로 보기 전에 `push/pull` contact behavior를 검증한다.
-3. body/front camera와 wrist/downward camera의 mount pose와 관측 범위를 정의한다.
-4. target position/height 추정값을 내부 좌표 baseline과 비교한다.
-5. 실제 robot motion은 safety gate 뒤에 둔다.
-6. 의미 있는 변경이나 실험마다 concise note 하나만 기록한다.
-7. 이 파일이 링크하지 않는 dated note는 archive로 취급한다.
-
-## English
-
-### Repository Role
-
-`robotarm_mt4` is the Mirobot/MT4 asset and hardware-transfer baseline repository.
-
-Use this repository for:
-
-- Mirobot/MT4 URDF/USD asset checks
-- joint/action mapping and hardware-transfer notes
-- Mars twin simulation checks close to the real asset
-- visual inspection, plotting, and checkpoint utility scripts
-
-Use `robotarm_student` for the broader student curriculum archive and staged classroom experiments.
-
-### Current Baseline
-
-Active task package:
-
-- `source/mirobot_reach_direct`
-
-Main task IDs:
-
-- `Mirobot-Reach-Pregrasp-Direct-v0`
-- `Mirobot-Mars-Twin-Pick-Direct-v0`
-- `Mirobot-Mars-Twin-Place-Direct-v0`
-- `Mirobot-Mars-Twin-Stack-Direct-v0`
-- `Mirobot-Mars-Twin-Push-Direct-v0`
-- `Mirobot-Mars-Twin-Pull-Direct-v0`
-
-Current hardware-transfer rule:
-
-- policy actions are limited to four MT4 command-facing joints
-- mapping reference: `docs/records/design/20260518_mt4_hardware_transfer_mapping.md`
-- dynamic object contact reference: `docs/records/design/20260518_dynamic_cube_target.md`
-- official WLKATA MT4 URDF check reference: `docs/records/design/20260518_official_mt4_urdf_check.md`
-- perception baseline reference: `docs/records/design/20260608_dual_pi_camera_perception_plan.md`
-- student coordinate curriculum handoff: `docs/records/design/20260610_student_coordinate_handoff_and_training_plan.md`
-- camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
-- latest MT4 coordinate Stage 0 result: `docs/records/training/20260611_reach_aware_stage0_entrygate_600iter_analysis.md`
-- MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
-- latest MT4 coordinate Stage 1 plane result: `docs/records/training/20260614_stage1_cameraaudit_operating_workspace_analysis.md`
-- latest MT4 coordinate Stage 1 focus result: `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md`
-
-### Real MT4 Perception Baseline
-
-Real MT4 device learning belongs only in this repository. Keep the student simulation curriculum fixed in `robotarm_student`; this repository owns perception decisions that connect to the real asset, hardware mapping, and safety gate.
-
-Camera setup:
-
-- body/front camera: fixed on the front of the robot body to observe the workspace and target object.
-- wrist/downward camera: fixed near the gripper tip and aimed downward to observe final relative pose, height, and contact/grasp candidates.
-
-Learning transition:
-
-1. Keep the existing Isaac internal-target-coordinate baseline as the hardware-transfer comparison baseline.
-2. Verify both camera mount poses, fields of view, and occlusion in simulation first.
-3. Compare camera-estimated target position/height against the internal coordinates and record the error.
-4. Transition policy observations from internal coordinates to camera-estimated coordinates.
-5. Consider image features or end-to-end vision policy only after coordinate estimation is stable.
-6. Keep real robot motion behind the Safety Gate.
-
-### Reset Rationale
-
-The baseline was reset on 2026-05-22 because the previous working state had too many dated notes, the repositories had been renamed, and student curriculum responsibilities were mixed with hardware-transfer responsibilities. From now on, this repository is the Mirobot/MT4 asset and hardware-transfer baseline. Older records are preserved under `docs/records/archive/` rather than treated as the daily source of truth.
-
-### Practical Starting Point
-
-Start here today:
-
-1. Confirm the scene or task with a visual command.
-2. Run one training command only after the scene looks correct.
-3. Plot/select the checkpoint.
-4. Record camera mount and target position/height estimation against the internal-coordinate baseline.
-5. Update this file only if the MT4 asset, mapping, perception, safety, or task baseline changes.
-
-Visual inspection:
-
-```bash
-./scripts/view_mirobot_mars_twin_gui.sh --mission push
-./scripts/view_mirobot_mars_twin_gui.sh --mission pull
-```
-
-Repeatable training:
-
-```bash
-./scripts/train_mirobot_reach_128_1000.sh
-./scripts/train_mirobot_mars_twin.sh push
-./scripts/train_mirobot_coordinate_stage0_workspace_entry_128_300.sh
-./scripts/train_mirobot_coordinate_stage1_plane_128_600.sh
-./scripts/train_mirobot_coordinate_stage1_plane_sweep25_skip.sh
-./scripts/train_mirobot_coordinate_stage2_volume_128_600.sh
-./scripts/plot_and_select_mirobot_best.sh
-./scripts/play_mirobot_best.sh
-```
-
-The 2026-06-10 Stage 0 coordinate workspace-entry run validated task/runtime porting, but ended with `inside_workspace_rate=0.0000`. The 2026-06-11 top-down reach sampling audit redefined the MT4 workspace, and after the 2026-06-12 region 7/9 bottleneck the arm/end center was pulled 10 mm toward the robot to `(-0.068, 0.000, 0.103)`. For the future down-mounted gripper tip, the target workspace is shifted 35 mm lower to `(-0.068, 0.000, 0.068)`, `size=(0.045, 0.095, 0.055)`. The gripper camera points along the gripper-body `(+X, 0, -Z)` 45-degree axis from outside toward the gripper/target side, and the observation includes the dynamic gripper-camera forward vector. The 2026-06-14 Stage 1 camera-audit sweep marked `1..14` as operational and `15..25` as camera-stable but learning-failed. Focused region `16` and `17` runs then mastered down to a `20mm` success radius, while region `16` failed at `15mm` after `1200` iterations. The order is now Stage 0 workspace-entry, Stage 1 5x5 plane, Stage 1 focus precision ladder, then Stage 2 5x5x4 volume.
-
-### Safety Gate
-
-Do not promote real robot motion into the working baseline until these items are recorded:
-
-- home pose joint table
-- conservative joint limits
-- Isaac joint/action to MT4 SDK command mapping
-- no-motion connection check
-- low-speed single-joint check
-- emergency stop and recovery procedure
-
-### Documentation Policy
-
-- Follow the record index and format in `docs/records/README.md`.
-- Put baseline design records under `docs/records/design/`.
-- Put training results and analysis under `docs/records/training/`.
-- Put historical records that are not directly used by the current baseline under `docs/records/archive/`.
-- Do not create a new note for routine command output.
-- Record new observations as dated records, then update this file only when the MT4 asset, mapping, safety, or task baseline changes.
-- Daily baseline decisions should be possible from `README.md` and this file alone.
-
-### Next Work
-
-1. Keep this repository focused on MT4 asset fidelity, mapping, and safe simulation.
-2. Verify `push/pull` contact behavior before treating `pick/place/stack` as stable.
-3. Define mount poses and fields of view for the body/front camera and wrist/downward camera.
-4. Compare target position/height estimates against the internal-coordinate baseline.
-5. Keep real robot motion behind the safety gate.
-6. Record only one concise note per meaningful change or experiment.
-7. Treat dated notes as archive unless this file links to them.
+1. Region `16`에서 성공 반경 `18mm`를 먼저 확인한다.
+2. `18mm`가 mastered되면 final 25mm 이내 center/top-down XY reward를 보강하고 `15mm`를 재시도한다.
+3. Region `16`에서 통과한 조건을 region `17`에 복제한다.
+4. `16/17`의 `15mm` 성공 후에만 `15..25` 전체 sweep을 다시 연다.
+5. 실제 robot motion은 Safety Gate 완료 전까지 보류한다.
