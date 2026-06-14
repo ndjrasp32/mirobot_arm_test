@@ -43,7 +43,7 @@ Main task IDs:
 - camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
 - latest MT4 coordinate Stage 0 result: `docs/records/training/20260611_reach_aware_stage0_entrygate_600iter_analysis.md`
 - MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
-- latest MT4 coordinate Stage 1 plane result: `docs/records/training/20260613_stage1_seq25_skipstalled3840_analysis.md`
+- latest MT4 coordinate Stage 1 plane result: `docs/records/training/20260614_stage1_cameraaudit_operating_workspace_analysis.md`
 
 ### 실제 MT4 Perception Baseline
 
@@ -97,7 +97,7 @@ Repeatable training:
 ./scripts/play_mirobot_best.sh
 ```
 
-2026-06-10 Stage 0 coordinate workspace-entry 학습은 task/runtime 포팅 확인에는 성공했지만, `inside_workspace_rate=0.0000`으로 끝났습니다. 2026-06-11 top-down reach sampling 기준으로 MT4 작업 박스를 다시 잡았고, 2026-06-12 region 7/9 병목 이후 arm/end 기준 중심을 `(-0.068, 0.000, 0.103)`으로 로봇팔 쪽에 10mm 당겼습니다. 미래 하향 장착 집게 끝점을 반영해 target workspace는 35mm 낮춘 `(-0.068, 0.000, 0.068)`, `size=(0.045, 0.095, 0.055)`를 사용합니다. gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보게 두고, 관측에는 동적 gripper-camera forward 벡터를 포함합니다. 2026-06-13 Stage 1 5x5 sweep에서는 정체 영역을 자동 skip하도록 바꿨고, `1..14`는 mastered, `15..25`는 skipped로 기록됐습니다. 2026-06-14부터는 학습 성공 여부와 카메라 추정 안정성을 함께 기록해 `operational`, `visible_learning_failed`, `camera_excluded` 영역을 나눕니다. 학습 순서는 Stage 0 workspace-entry, Stage 1 5x5 plane, Stage 2 5x5x4 volume입니다.
+2026-06-10 Stage 0 coordinate workspace-entry 학습은 task/runtime 포팅 확인에는 성공했지만, `inside_workspace_rate=0.0000`으로 끝났습니다. 2026-06-11 top-down reach sampling 기준으로 MT4 작업 박스를 다시 잡았고, 2026-06-12 region 7/9 병목 이후 arm/end 기준 중심을 `(-0.068, 0.000, 0.103)`으로 로봇팔 쪽에 10mm 당겼습니다. 미래 하향 장착 집게 끝점을 반영해 target workspace는 35mm 낮춘 `(-0.068, 0.000, 0.068)`, `size=(0.045, 0.095, 0.055)`를 사용합니다. gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보게 두고, 관측에는 동적 gripper-camera forward 벡터를 포함합니다. 2026-06-14 Stage 1 camera-audit sweep에서는 `1..14`가 `operational`, `15..25`가 `visible_learning_failed`, `camera_excluded=0`으로 기록됐습니다. 학습 순서는 Stage 0 workspace-entry, Stage 1 5x5 plane, Stage 2 5x5x4 volume입니다.
 
 ### Safety Gate
 
@@ -171,7 +171,7 @@ Current hardware-transfer rule:
 - camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
 - latest MT4 coordinate Stage 0 result: `docs/records/training/20260611_reach_aware_stage0_entrygate_600iter_analysis.md`
 - MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
-- latest MT4 coordinate Stage 1 plane result: `docs/records/training/20260613_stage1_seq25_skipstalled3840_analysis.md`
+- latest MT4 coordinate Stage 1 plane result: `docs/records/training/20260614_stage1_cameraaudit_operating_workspace_analysis.md`
 
 ### Real MT4 Perception Baseline
 
