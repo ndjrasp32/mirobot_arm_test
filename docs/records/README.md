@@ -61,10 +61,11 @@ YYYYMMDD_<element>_<topic>_<record_type>.md
 | 현재 기준 | `../CURRENT_BASELINE.md` |
 | 작업 공간 정의 | `design/20260611_mt4_reach_limited_workspace_audit.md` |
 | perception 계획 | `design/20260608_dual_pi_camera_perception_plan.md` |
+| 카메라 정렬 운영 가동 영역 계획 | `design/20260614_camera_aligned_operating_workspace_plan.md` |
 | MT4 hardware mapping | `design/20260518_mt4_hardware_transfer_mapping.md` |
 | 2026-06-11 학습 산출물 묶음 | `training/20260611_artifact_index.md` |
 | 최신 Stage 0 엔트리 게이트 결과 | `training/20260611_reach_aware_stage0_entrygate_600iter_analysis.md` |
-| 최신 Stage 1 순차 25영역 결과 | `training/20260612_stage1_seq25_tipdown35_analysis.md` |
+| 최신 Stage 1 순차 25영역 결과 | `training/20260613_stage1_seq25_skipstalled3840_analysis.md` |
 
 ## English
 

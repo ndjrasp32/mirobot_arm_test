@@ -78,6 +78,7 @@
 참고 설계 기록: `docs/records/design/20260608_dual_pi_camera_perception_plan.md`
 student coordinate curriculum handoff: `docs/records/design/20260610_student_coordinate_handoff_and_training_plan.md`
 MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
+camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
 
 ### 실제 MT4 이식 기준
 
@@ -122,7 +123,7 @@ MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_rea
 - Stage 1 5x5 plane y/z cell size: `(0.0190, 0.0110)`
 - Stage 2 5x5x4 cell size: `(0.0090, 0.0190, 0.0138)`
 
-좌/우 body camera stereo projection으로 target 좌표를 추정하고, gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보며 최종 상대 위치, depth, visibility를 확인합니다. 정책 관측에는 gripper camera forward 벡터도 포함해 팔의 상하좌우 회전으로 생기는 시야 변화를 학습 입력에 반영합니다. 실제 로봇 motion은 Safety Gate 이후에만 다룹니다.
+좌/우 body camera stereo projection으로 target 좌표를 추정하고, gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보며 최종 상대 위치, depth, visibility를 확인합니다. 정책 관측에는 gripper camera forward 벡터도 포함해 팔의 상하좌우 회전으로 생기는 시야 변화를 학습 입력에 반영합니다. 2026-06-14부터는 Stage 1 학습 결과를 카메라 audit과 함께 기록해 `operational`, `visible_learning_failed`, `camera_excluded` 영역을 분리합니다. 실제 로봇 motion은 Safety Gate 이후에만 다룹니다.
 
 ## English
 
