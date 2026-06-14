@@ -79,6 +79,7 @@
 student coordinate curriculum handoff: `docs/records/design/20260610_student_coordinate_handoff_and_training_plan.md`
 MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
 camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
+latest Stage 1 focus result: `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md`
 
 ### 실제 MT4 이식 기준
 
@@ -123,7 +124,7 @@ camera-aligned operating workspace plan: `docs/records/design/20260614_camera_al
 - Stage 1 5x5 plane y/z cell size: `(0.0190, 0.0110)`
 - Stage 2 5x5x4 cell size: `(0.0090, 0.0190, 0.0138)`
 
-좌/우 body camera stereo projection으로 target 좌표를 추정하고, gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보며 최종 상대 위치, depth, visibility를 확인합니다. 정책 관측에는 gripper camera forward 벡터도 포함해 팔의 상하좌우 회전으로 생기는 시야 변화를 학습 입력에 반영합니다. 2026-06-14 Stage 1 camera-audit sweep 기준 운영 가능 영역은 `1..14`이고, `15..25`는 카메라는 안정적이지만 학습이 실패한 `visible_learning_failed` 영역입니다. 실제 로봇 motion은 Safety Gate 이후에만 다룹니다.
+좌/우 body camera stereo projection으로 target 좌표를 추정하고, gripper camera는 집게 body 기준 `(+X, 0, -Z)` 45도 방향으로 밖에서 안쪽을 보며 최종 상대 위치, depth, visibility를 확인합니다. 정책 관측에는 gripper camera forward 벡터도 포함해 팔의 상하좌우 회전으로 생기는 시야 변화를 학습 입력에 반영합니다. 2026-06-14 Stage 1 camera-audit sweep 기준 운영 가능 영역은 `1..14`이고, `15..25`는 카메라는 안정적이지만 학습이 실패한 `visible_learning_failed` 영역입니다. 이후 region `16`, `17` focus run에서는 성공 반경 `20mm`까지 mastered됐고, region `16`의 `15mm` run은 실패했습니다. 실제 로봇 motion은 Safety Gate 이후에만 다룹니다.
 
 ## English
 
@@ -203,6 +204,8 @@ Real MT4 device learning and hardware-transfer decisions belong in this reposito
 Reference design note: `docs/records/design/20260608_dual_pi_camera_perception_plan.md`
 Student coordinate curriculum handoff: `docs/records/design/20260610_student_coordinate_handoff_and_training_plan.md`
 MT4 reach-limited 27-cell workspace audit: `docs/records/design/20260611_mt4_reach_limited_workspace_audit.md`
+camera-aligned operating workspace plan: `docs/records/design/20260614_camera_aligned_operating_workspace_plan.md`
+latest Stage 1 focus result: `docs/records/training/20260614_stage1_region16_17_radius_ladder_analysis.md`
 
 ### Real MT4 Transfer Rule
 
@@ -247,4 +250,4 @@ As of 2026-06-12, Stage 1 uses a 5x5 plane curriculum and Stage 2 uses a 5x5x4 v
 - Stage 1 5x5 plane y/z cell size: `(0.0190, 0.0110)`
 - Stage 2 5x5x4 cell size: `(0.0090, 0.0190, 0.0138)`
 
-Left/right body-camera stereo projection estimates the target coordinate. The gripper camera points along the gripper-body `(+X, 0, -Z)` 45-degree axis from outside toward the gripper/target side, then validates final relative pose, depth, and visibility. The policy observation includes the dynamic gripper-camera forward vector so arm rotation changes the learned camera view. Keep real robot motion behind the Safety Gate.
+Left/right body-camera stereo projection estimates the target coordinate. The gripper camera points along the gripper-body `(+X, 0, -Z)` 45-degree axis from outside toward the gripper/target side, then validates final relative pose, depth, and visibility. The policy observation includes the dynamic gripper-camera forward vector so arm rotation changes the learned camera view. The 2026-06-14 Stage 1 camera-audit sweep marks `1..14` as operational and `15..25` as camera-stable but learning-failed. Focused region `16` and `17` runs then mastered down to a `20mm` success radius, while region `16` failed at `15mm`. Keep real robot motion behind the Safety Gate.

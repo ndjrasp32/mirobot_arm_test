@@ -30,6 +30,13 @@ MIROBOT_USD_PATH = str(PROJECT_ROOT / "assets/usd/mirobot_real/mt4_from_wlkata_i
 REACH_LIMITED_VOLUME_WORKSPACE_CENTER = (-0.068, 0.0, 0.103)
 REACH_LIMITED_VOLUME_WORKSPACE_SIZE = (0.045, 0.095, 0.055)
 STAGE1_TOOL_TIP_DOWN_OFFSET = float(os.environ.get("MT4_TOOL_TIP_DOWN_OFFSET", "0.035") or "0.035")
+STAGE1_SUCCESS_RADIUS = float(os.environ.get("MT4_STAGE1_SUCCESS_RADIUS", "0.012") or "0.012")
+STAGE1_CENTER_SUCCESS_RADIUS = float(
+    os.environ.get("MT4_CENTER_SUCCESS_RADIUS", str(STAGE1_SUCCESS_RADIUS)) or str(STAGE1_SUCCESS_RADIUS)
+)
+STAGE1_TOP_DOWN_XY_SUCCESS_RADIUS = float(
+    os.environ.get("MT4_TOP_DOWN_XY_SUCCESS_RADIUS", str(STAGE1_SUCCESS_RADIUS)) or str(STAGE1_SUCCESS_RADIUS)
+)
 
 
 @configclass
@@ -118,6 +125,28 @@ class MT4CoordinateCurriculumEnvCfg(DirectRLEnvCfg):
                 visual_material=sim_utils.PreviewSurfaceCfg(
                     diffuse_color=(0.05, 0.35, 1.0),
                     emissive_color=(0.0, 0.05, 0.30),
+                ),
+            ),
+        },
+    )
+
+    active_region_marker_cfg = VisualizationMarkersCfg(
+        prim_path="/Visuals/MT4CoordinateActiveRegions",
+        markers={
+            "attempting_region": sim_utils.CuboidCfg(
+                size=(1.0, 1.0, 1.0),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(1.0, 0.62, 0.05),
+                    emissive_color=(0.25, 0.10, 0.0),
+                    opacity=0.35,
+                ),
+            ),
+            "successful_region": sim_utils.CuboidCfg(
+                size=(1.0, 1.0, 1.0),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.05, 0.45, 1.0),
+                    emissive_color=(0.0, 0.08, 0.30),
+                    opacity=0.45,
                 ),
             ),
         },
@@ -241,8 +270,8 @@ class MT4CoordinatePlaneEnvCfg(MT4CoordinateCurriculumEnvCfg):
     master_regions_sequentially = True
     region_mastery_successes = 10
     camera_region_success_radius = 0.90
-    center_success_radius = 0.012
-    top_down_xy_success_radius = 0.012
+    center_success_radius = STAGE1_CENTER_SUCCESS_RADIUS
+    top_down_xy_success_radius = STAGE1_TOP_DOWN_XY_SUCCESS_RADIUS
     reach_weight = 5.0
     plane_weight = 3.0
     reach_exp_scale = 18.0
@@ -421,6 +450,21 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
         self.active_region_id = self.region_curriculum_order[self.active_region_order_index]
         self.region_success_counts = torch.zeros((self.total_regions,), dtype=torch.long, device=self.device)
         self.region_best_episode_reward = torch.full((self.total_regions,), -float("inf"), device=self.device)
+        self.region_best_center_success_score = torch.full(
+            (self.total_regions,), -float("inf"), device=self.device
+        )
+        self.region_best_center_success_distance = torch.full(
+            (self.total_regions,), float("inf"), device=self.device
+        )
+        self.region_best_center_success_reward = torch.full(
+            (self.total_regions,), -float("inf"), device=self.device
+        )
+        self.region_best_center_success_top_down_xy = torch.full(
+            (self.total_regions,), float("inf"), device=self.device
+        )
+        self.region_best_center_success_step = torch.zeros(
+            (self.total_regions,), dtype=torch.long, device=self.device
+        )
         self.region_mastered = torch.zeros((self.total_regions,), dtype=torch.bool, device=self.device)
         self.region_skipped = torch.zeros((self.total_regions,), dtype=torch.bool, device=self.device)
         self.region_skip_reasons = [""] * self.total_regions
@@ -499,6 +543,7 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
 
         self.target_markers = VisualizationMarkers(self.cfg.target_marker_cfg)
         self.success_markers = VisualizationMarkers(self.cfg.success_marker_cfg)
+        self.active_region_markers = VisualizationMarkers(self.cfg.active_region_marker_cfg)
 
         self._write_workspace_audit_snapshot()
         self._sample_targets(torch.arange(self.num_envs, device=self.device))
@@ -1201,6 +1246,33 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
         row_ids = torch.clamp((norm_z * self.region_rows).long(), max=self.region_rows - 1)
         return (row_ids * self.region_cols + col_ids).long()
 
+    def _active_region_marker_transforms(self) -> tuple[torch.Tensor, torch.Tensor]:
+        region_ids = self.region_ids
+        span = self.workspace_max - self.workspace_min
+
+        if self.cfg.front_face_region_targets:
+            col_ids, row_ids, _ = self._volume_cell_indices(region_ids)
+            centers = torch.zeros((self.num_envs, 3), device=self.device)
+            centers[:, 0] = self.workspace_center[0]
+            centers[:, 1] = self.workspace_min[1] + ((col_ids.float() + 0.5) / float(self.region_cols)) * span[1]
+            centers[:, 2] = self.workspace_min[2] + ((row_ids.float() + 0.5) / float(self.region_rows)) * span[2]
+            scales = torch.zeros((self.num_envs, 3), device=self.device)
+            scales[:, 0] = 0.006
+            scales[:, 1] = span[1] / float(self.region_cols)
+            scales[:, 2] = span[2] / float(self.region_rows)
+            return centers, scales
+
+        col_ids, row_ids, depth_ids = self._volume_cell_indices(region_ids)
+        centers = torch.zeros((self.num_envs, 3), device=self.device)
+        centers[:, 0] = self.workspace_min[0] + ((col_ids.float() + 0.5) / float(self.region_cols)) * span[0]
+        centers[:, 1] = self.workspace_min[1] + ((row_ids.float() + 0.5) / float(self.region_rows)) * span[1]
+        centers[:, 2] = self.workspace_min[2] + ((depth_ids.float() + 0.5) / float(self.region_depth)) * span[2]
+        scales = torch.zeros((self.num_envs, 3), device=self.device)
+        scales[:, 0] = span[0] / float(self.region_cols)
+        scales[:, 1] = span[1] / float(self.region_rows)
+        scales[:, 2] = span[2] / float(self.region_depth)
+        return centers, scales
+
     def _camera_basis(self, camera_pos: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         look_at = torch.tensor(self.cfg.camera_look_at, device=self.device)
         forward = look_at - camera_pos
@@ -1767,6 +1839,10 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
 
         success_region_ids = self.region_ids[success].detach()
         success_rewards = self.episode_rewards[success].detach()
+        success_distances = self.distance[success].detach()
+        success_top_down_xy = self.top_down_xy_error[success].detach()
+        center_radius = max(float(self.cfg.center_success_radius), 1.0e-6)
+        success_center_scores = 1.0 - (success_distances / center_radius).clamp(0.0, 1.0)
         for region_id_tensor in torch.unique(success_region_ids):
             region_id = int(region_id_tensor.item())
             region_mask = success_region_ids == region_id
@@ -1774,6 +1850,16 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
             best_reward = torch.max(success_rewards[region_mask])
             if best_reward > self.region_best_episode_reward[region_id]:
                 self.region_best_episode_reward[region_id] = best_reward
+            best_center_score, local_best_index = torch.max(success_center_scores[region_mask], dim=0)
+            if best_center_score > self.region_best_center_success_score[region_id]:
+                region_distances = success_distances[region_mask]
+                region_rewards = success_rewards[region_mask]
+                region_top_down_xy = success_top_down_xy[region_mask]
+                self.region_best_center_success_score[region_id] = best_center_score
+                self.region_best_center_success_distance[region_id] = region_distances[local_best_index]
+                self.region_best_center_success_reward[region_id] = region_rewards[local_best_index]
+                self.region_best_center_success_top_down_xy[region_id] = region_top_down_xy[local_best_index]
+                self.region_best_center_success_step[region_id] = self.curriculum_step_counter
             if region_id == self.active_region_id:
                 self.active_region_last_success_step = self.curriculum_step_counter
 
@@ -1828,11 +1914,32 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
 
         out_path = Path(log_dir) / "region_mastery.csv"
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        lines = ["region_number,success_count,best_episode_reward,mastered,skipped,active,status,skip_reason\n"]
+        lines = [
+            "region_number,success_count,best_episode_reward,"
+            "best_center_success_score,best_center_success_distance,"
+            "best_center_success_reward,best_center_success_top_down_xy,"
+            "best_center_success_step,mastered,skipped,active,status,skip_reason\n"
+        ]
         complete = self.is_region_curriculum_complete()
         for region_id in range(self.total_regions):
             best_reward = self.region_best_episode_reward[region_id]
             best_value = "" if not torch.isfinite(best_reward) else f"{float(best_reward.item()):.6f}"
+            best_center_score = self.region_best_center_success_score[region_id]
+            best_center_score_value = (
+                "" if not torch.isfinite(best_center_score) else f"{float(best_center_score.item()):.6f}"
+            )
+            best_center_distance = self.region_best_center_success_distance[region_id]
+            best_center_distance_value = (
+                "" if not torch.isfinite(best_center_distance) else f"{float(best_center_distance.item()):.6f}"
+            )
+            best_center_reward = self.region_best_center_success_reward[region_id]
+            best_center_reward_value = (
+                "" if not torch.isfinite(best_center_reward) else f"{float(best_center_reward.item()):.6f}"
+            )
+            best_center_top_down_xy = self.region_best_center_success_top_down_xy[region_id]
+            best_center_top_down_xy_value = (
+                "" if not torch.isfinite(best_center_top_down_xy) else f"{float(best_center_top_down_xy.item()):.6f}"
+            )
             mastered = bool(self.region_mastered[region_id].item())
             skipped = bool(self.region_skipped[region_id].item())
             active = (not complete) and region_id == self.active_region_id
@@ -1850,6 +1957,11 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
                         str(region_id + 1),
                         str(int(self.region_success_counts[region_id].item())),
                         best_value,
+                        best_center_score_value,
+                        best_center_distance_value,
+                        best_center_reward_value,
+                        best_center_top_down_xy_value,
+                        str(int(self.region_best_center_success_step[region_id].item())),
                         "1" if mastered else "0",
                         "1" if skipped else "0",
                         "1" if active else "0",
@@ -1875,3 +1987,12 @@ class MT4CoordinateCurriculumEnv(DirectRLEnv):
         success_pos_w = target_pos_w.clone()
         success_pos_w[~success] = torch.tensor((0.0, 0.0, -10.0), device=self.device)
         self.success_markers.visualize(success_pos_w)
+        if hasattr(self, "active_region_markers"):
+            region_centers, region_scales = self._active_region_marker_transforms()
+            region_centers_w = region_centers + self.scene.env_origins
+            region_marker_indices = success.long()
+            self.active_region_markers.visualize(
+                translations=region_centers_w,
+                scales=region_scales,
+                marker_indices=region_marker_indices,
+            )

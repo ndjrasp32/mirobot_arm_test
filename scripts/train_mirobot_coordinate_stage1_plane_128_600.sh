@@ -16,6 +16,8 @@ MAX_ITERATIONS="${MT4_MAX_ITERATIONS:-1200}"
 FOCUS_REGION="${MT4_FOCUS_REGION:-}"
 TOOL_TIP_DOWN_OFFSET="${MT4_TOOL_TIP_DOWN_OFFSET:-0.035}"
 TOOL_TIP_DOWN_MM="$(python3 -c 'import os; print(int(round(float(os.environ.get("MT4_TOOL_TIP_DOWN_OFFSET", "0.035")) * 1000)))')"
+SUCCESS_RADIUS="${MT4_STAGE1_SUCCESS_RADIUS:-${MT4_CENTER_SUCCESS_RADIUS:-0.012}}"
+SUCCESS_RADIUS_MM="$(python3 -c 'import os; print(int(round(float(os.environ.get("MT4_STAGE1_SUCCESS_RADIUS", os.environ.get("MT4_CENTER_SUCCESS_RADIUS", "0.012"))) * 1000)))')"
 RUN_FOCUS_SUFFIX=""
 if [[ -n "${FOCUS_REGION}" ]]; then
   RUN_FOCUS_SUFFIX="_region${FOCUS_REGION}"
@@ -30,7 +32,7 @@ if [[ -n "${FOCUS_REGION}" ]]; then
   echo "[INFO] focus region override: region ${FOCUS_REGION} only"
 fi
 echo "[INFO] each region is mastered after 10 new successes; mastered regions stop producing reward"
-echo "[INFO] success requires same camera cell, body stereo visibility, 45deg gripper-camera visibility, 1.2cm top-down XY gate, and 1.2cm center distance"
+echo "[INFO] success requires same camera cell, body stereo visibility, 45deg gripper-camera visibility, ${SUCCESS_RADIUS}m top-down XY gate, and ${SUCCESS_RADIUS}m center distance"
 echo "[INFO] num_envs=128 max_iterations=${MAX_ITERATIONS} headless=true"
 
 "${ISAACLAB_DIR}/isaaclab.sh" -p "${PROJECT_DIR}/tools/rsl_rl/train_mirobot.py" \
@@ -39,5 +41,5 @@ echo "[INFO] num_envs=128 max_iterations=${MAX_ITERATIONS} headless=true"
   --max_iterations "${MAX_ITERATIONS}" \
   --headless \
   --seed "${MT4_SEED:-42}" \
-  --run_name mt4_coordinate_plane_seq25_10success_012_tipdown${TOOL_TIP_DOWN_MM}mm${RUN_FOCUS_SUFFIX}_128env_${MAX_ITERATIONS}iter \
+  --run_name mt4_coordinate_plane_seq25_10success_success${SUCCESS_RADIUS_MM}mm_tipdown${TOOL_TIP_DOWN_MM}mm${RUN_FOCUS_SUFFIX}_128env_${MAX_ITERATIONS}iter \
   "$@"

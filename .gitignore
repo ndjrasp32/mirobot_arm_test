@@ -6,5 +6,6 @@ __pycache__/
 logs/
 training_logs/run_stdout/
 training_logs/session_logs/
+training_logs/launch/
 data/
 experiments/*_metrics.csv
